@@ -4,29 +4,25 @@ from .serializers import TaskSerializer
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from rest_framework.permissions import IsAuthenticated  # <-- Add this import
+from rest_framework import viewsets, permissions
+from .serializers import *
+from .models import Task
+from rest_framework import filters
 
-# For the API views:
-class TaskListCreateView(generics.ListCreateAPIView):
+class TaskViewSet(viewsets.ModelViewSet):
+    permissions_classes = [permissions.IsAuthenticated]
     serializer_class = TaskSerializer
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['title', 'description']
-    ordering_fields = ['created_at', 'due_date', 'priority']
-    permission_classes = [IsAuthenticated]  # <-- Add this line
+    queryset = Task.objects.all()
+    filter_backends = [filters.OrderingFilter, filters.SearchFilter]
+    ordering_fields = ['created_at',]
+    search_fields = ['title', 'description', 'status']
 
     def get_queryset(self):
-        user = self.request.user
-        return Task.objects.filter(user=user)
+        return super().get_queryset()
     
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        return serializer.save(user = self.request.user)
 
-class TaskRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated]  # <-- Add this line
-
-    def get_queryset(self):
-        user = self.request.user
-        return Task.objects.filter(user=user)
 
 # For the template view:
 @login_required
